@@ -32,7 +32,41 @@ shinyServer(function(input,output){
     cbind(data(),Demand_norm,Predicted_Demand)
   })
   
-
+#this reactive variable is for annual energy demand
+  energy_var <- reactive({
+    req(dem_data())
+    if(input$param=="Demand"){
+    sum(dem_data()$Demand)
+    }else if(input$param=="Predicted Demand"){
+      sum(dem_data()$Predicted_Demand)
+    }
+  })
+  
+#this reactive variable is for peak power demand of year  
+  peakpwr_var <- reactive({
+    req(dem_data())
+    if(input$param=="Demand"){
+      max(dem_data()$Demand)
+    }else if(input$param=="Predicted Demand"){
+      max(dem_data()$Predicted_Demand)
+    }
+  })
+  
+#this reactive variable gives average annual power demand  
+  avg_pwr <- reactive({
+    req(dem_data())
+    energy_var()/length(dem_data()$Hours)
+  })
+  
+#this reactive variable gives plant load factor  
+  PLF_var <- reactive({
+    req(dem_data())
+    if(input$param=='Demand'){
+    avg_pwr()/max(dem_data()$Demand)
+    }else if(input$param=='Predicted Demand'){
+    avg_pwr()/max(dem_data()$Predicted_Demand) 
+    }
+  })
   
   
   
@@ -66,12 +100,34 @@ shinyServer(function(input,output){
     
   })
   
-
+#this ouput display annual energy demand  
+  output$energy <- renderText({
+    paste("Annual Energy = ",round(energy_var(), 2)," KWH/Year")
+  })
+  
+#this output display plant load factor  
+  output$PLF <- renderText({
+    paste("Plant Load Factor = ",round(PLF_var(),2))
+  })
+  
+#this output display annual average power demand  
+  output$avgpwr <- renderText({
+    paste("Average Power = ",round(avg_pwr(),2)," KW")
+  })
+  
+#this output display annual peak power demand  
+  output$peakpwr <- renderText({
+    paste("Peak Power = ",round(peakpwr_var(),2)," KW")
+  })
   
 #this output dynamically generate the tabsets when  the file is loaded.
   output$out <- renderUI({
     tabsetPanel(
-      tabPanel("Plot",plotlyOutput("plot")
+      tabPanel("Plot",plotlyOutput("plot"),
+               textOutput("energy"),
+               textOutput("PLF"),
+               textOutput("peakpwr"),
+               textOutput("avgpwr")
                ),
       tabPanel("Data",tableOutput("table")),
       tabPanel("About File", tableOutput("filedf"))
